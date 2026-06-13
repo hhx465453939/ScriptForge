@@ -1,0 +1,70 @@
+{
+  "schema_version": "2.0",
+  "id": "ebuygo-content-ops",
+  "display_name": "Ebuygo 视频文案拆解与仿写引擎",
+  "summary": "接收任意行业的短视频文字脚本，进行五层深度透视拆解（钩子/结构/逻辑/亮点/爆款评估），提炼可复用的脚本模型，输出完形填空模板（运营填空即用）和跨品类仿写脚本",
+  "trigger_summary": "用户提及文案拆解、脚本拆解、仿写、完形填空、爆款拆解、脚本分析、视频文案拆解时触发",
+  "scope": "workspace_custom",
+  "entrypoint": {
+    "kind": "skill",
+    "path": "skills/ebuygo-content-ops/SKILL.md",
+    "runtime": "dual"
+  },
+  "delegates_to": [
+    "socialdatax-xhs",
+    "socialdatax-douyin",
+    "open-websearch-local",
+    "scrapling"
+  ],
+  "state_source": "tasks/<task>/TASK_ORCHESTRATION.md",
+  "completion_artifacts": [
+    "reports/script_analysis_<model_name>_<timestamp>.md",
+    "assets/fill_blank_template_<model_name>.md"
+  ],
+  "information_profile": {
+    "enabled": true,
+    "diet": "omnivore",
+    "domains": ["corporate", "general"],
+    "primary_lanes": ["socialdatax-xhs", "socialdatax-douyin"],
+    "escalation_lanes": ["open-websearch-local", "scrapling", "bing-search", "fetch"],
+    "local_corpora": [
+      "tasks/<task>/sources",
+      "skills/ebuygo-content-ops/assets/",
+      "skills/ebuygo-content-ops/references/"
+    ],
+    "notes": "核心为文案拆解分析, 外部数据仅在需要平台趋势/竞品参考时调用"
+  },
+  "framework_profile": {
+    "enabled": true,
+    "frameworks": ["generic_research", "corporate_advisory"],
+    "prefer_local_sources": true,
+    "allow_historical_analogues": true,
+    "notes": "6 Phase工作流: 接收感知→深度拆解→模型提炼→完形填空→仿写脚本→知识分享(可选)"
+  },
+  "work_product_profile": {
+    "enabled": true,
+    "deliverable_kind": "analysis_report",
+    "required_sections": [
+      "基础判断",
+      "钩子拆解",
+      "结构解码",
+      "说服逻辑链",
+      "亮点标注",
+      "爆款潜力评估",
+      "完形填空模板",
+      "仿写脚本"
+    ],
+    "optional_sections": [
+      "知识分享文案"
+    ],
+    "required_artifacts": [
+      "script_analysis_<model>_<timestamp>.md 完整拆解报告",
+      "fill_blank_template_<model>.md 完形填空模板"
+    ],
+    "handoff_rules": [
+      "gate:deep-research-deliver",
+      "output:FILEPATH"
+    ],
+    "notes": "完形填空模板为核心交付物, 测评类/种草类/清单类文案必须输出"
+  }
+}
