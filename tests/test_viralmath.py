@@ -364,6 +364,18 @@ class TestFeatures(unittest.TestCase):
         fs = F.extract(txt, genre="text")
         self.assertEqual(fs.absolute_hits, 0, f"序数词被误判为绝对化：{fs.absolute_hits}")
 
+    def test_enumeration_not_absolute(self):
+        # 回归保护（同源缺陷）：长文枚举「第一，… 第二，… 第三，…」被当成最高级用语
+        txt = "理由有三点。第一，灵感无法复现。第二，结构可以复用。第三，头部内容收敛。"
+        fs = F.extract(txt, genre="text")
+        self.assertEqual(fs.absolute_hits, 0, f"枚举用法被误判：{fs.absolute_hits}")
+
+    def test_real_superlative_first_counted(self):
+        # 明确最高级组合必须照罚，不能因为排序数而放过真违规
+        for txt in ("全国第一的销量", "销量第一", "行业第一品牌", "第一品牌"):
+            fs = F.extract(txt, genre="text")
+            self.assertGreaterEqual(fs.absolute_hits, 1, f"{txt} 未被识别为绝对化")
+
     def test_superlative_still_counted(self):
         # 真违规必须照罚，不能因为修序数词而放过绝对化用语
         txt = "全网最低价，唯一选择，永久有效。"
@@ -382,12 +394,12 @@ class TestFeatures(unittest.TestCase):
         self.assertGreater(fs.cta_hits, 0)
 
     def test_ordinal_text_still_scores_persuasion(self):
-        # 端到端回归：带序数词 + 有 CTA 的稿子，说服转化不应被扣成 0
-        txt = ("第一步先定指标。第一天我搜了一圈。第二天开始写稿，数据对比了三组。"
+        # 端到端回归：带序数词 + 枚举 + 有 CTA 的稿子，说服转化不应被扣成 0
+        txt = ("理由三点。第一，先定指标。第二，我搜了一圈。第一天开始写稿，数据对比了三组。"
                "仓库装好后跑一遍，跑完把结果发我，评论区也可以留言。")
         r = score(txt, genre="text", n_boot=0)
         self.assertGreater(r["dimensions"]["persuasion"], 0.0,
-                           "序数词假阳性仍在吞掉说服转化得分")
+                           "序数/枚举假阳性仍在吞掉说服转化得分")
         self.assertEqual(r["feature_trace"]["persuasion"]["absolute_hits"], 0)
 
 
