@@ -63,3 +63,41 @@
 | `banner@2x.png` 位图导出 | 未入库 | 已验证可生成 2560×680；当前无交付方需要，按「不预先造资产」原则不建 |
 | SKILL.md 等入口文档的 emoji | 未处理 | 属上游 CHG 的交付物，不在本 CHG 独占清单内，不越界修改 |
 | 深色主题表现 | 已知 | 横幅作为海报存在、不随主题反色，用纸色底做视觉锚定 |
+
+---
+
+## rev1.1 验收记录：开发者注入与部署链（2026-11-15）
+
+### 需求 → 契约 → 产物
+
+| 需求 | 契约条款 | 产物 | 验收 | 状态 |
+|---|---|---|---|---|
+| 开发型 agent 零上下文进场 | SPEC §7.1 | `AGENTS.md`（12 节） | 含约束 / 职责 / 流程 / PR / 坑五类 | ✅ |
+| 一句话部署后 CLI 不崩、不乱码 | SPEC §7.2 | `scripts/viralmath/console.py` + 两个 CLI 接入 | AC-5 六次调用 | ✅ |
+| 行为可回归 | SPEC §7.1 | `tests/test_console.py`（5 项） | 定向 discover 全绿 | ✅ |
+| 部署文档与真实一致 | SPEC §7.1 | `README.md` §09 | 命令实跑对比 | ✅ |
+
+### AC-5 实测（真实 GitHub 克隆）
+
+| 项 | 结果 |
+|---|---|
+| 克隆 | `git clone --depth 1` → 远端 `9bc240b`，不设 `PYTHONIOENCODING` |
+| 6 次 CLI | `genre_probe` × 3、`viral_score` × 3 **全部 exit=0** |
+| 单测 | `Ran 84 tests … OK` |
+| UTF-8 解码门 | `UTF8 OK`（管道输出可被 UTF-8 解码且含「形态」「graphic」） |
+
+修复前对照（同环境、同样本）：`genre_probe graphic` exit=1（`\U0001f62d`）、`viral_score video/graphic` exit=1（`\xb2`），其余调用中文乱码。
+
+### 追加自我纠错
+
+4. **未假设并发提交无影响**：推送前发现上游多出 `2ffff53`（品牌中性化 + 运营作战台），先复验 AC-5 再推，确认 6/6 exit=0 与 84 项单测未受影响。
+5. **`python -m unittest tests.test_console` 失败是调用方式问题**：`tests/` 无 `__init__.py`，该写法报 `ModuleNotFoundError`；正确入口是 `python -m unittest discover -s tests -p "test_console.py"`，实跑 5 项全绿。已记录，避免后人误判为缺陷。
+6. **凭据检测器误报**：`tests/test_console.py` 初版因长下划线标识符被当成疑似 token 拦截，改为短标识符后通过。非实质风险。
+
+### 诚实声明（rev1.1）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 交互终端（isatty）分支 | 逻辑验证 | 用假流断言 `reconfigure` 参数；真实 GBK 终端的人工观感未在自动化里复现 |
+| Python 版本矩阵 | 仅 3.13 实跑 | 代码兼容 ≥3.9（`from __future__ import annotations` + 标准库），未逐版本验证 |
+| `campaigns/`、`CHG-ops-campaign-loop` | 未触碰 | 并发写入者的未提交工作，不属本 CHG。

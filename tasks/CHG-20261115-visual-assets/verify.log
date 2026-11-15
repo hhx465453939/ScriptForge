@@ -80,3 +80,35 @@ test_tty_keeps_local (test_console.TestStreams.test_tty_keeps_local) ... ok
 Ran 5 tests in 0.001s
 
 OK
+
+=== 并发提交后复验 2026-11-15 19:18:48（HEAD=9bc240b）===
+--- CLI 6 次 ---
+genre_probe video exit=0
+genre_probe graphic exit=0
+genre_probe text exit=0
+viral_score  video exit=0
+viral_score  graphic exit=0
+viral_score  text exit=0
+--- unittest ---
+Ran 84 tests in 1.674s
+
+OK
+--- UTF-8 门 ---
+UTF8 OK
+--- AGENTS.md 结构 ---
+12
+
+=== AC-5 · 真实 GitHub 克隆复验 2026-11-15 19:20:25 ===
+远端 HEAD: 9bc240b0c89deca057c3c9dabd3e48efe3b4233c
+克隆路径: /tmp/sfdeploy2/repo（全新 clone --depth 1，未设 PYTHONIOENCODING）
+genre_probe video exit=0
+genre_probe graphic exit=0
+genre_probe text exit=0
+viral_score  video exit=0
+viral_score  graphic exit=0
+viral_score  text exit=0
+Ran 84 tests in 1.004s
+
+OK
+UTF8 OK
+结论: AC-5 通过（6/6 exit=0 + 单测全绿 + UTF-8 解码门）
