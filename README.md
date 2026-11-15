@@ -369,6 +369,7 @@ text       时长/一句话                                            完整文
 ```text
 ScriptForge/
 ├── SKILL.md                         # 技能主入口（AI 读取）
+├── AGENTS.md                        # 开发型 agent 上下文与 PR 指南
 ├── skill.manifest.json              # 元数据与执行配置
 │
 ├── references/                      # 规则与知识库
@@ -443,6 +444,29 @@ gemini --list-skills | grep scriptforge
 ```text
 请帮我部署这个 skill：https://github.com/hhx465453939/ScriptForge
 ```
+
+### 部署后自检（一分钟，任何平台通用）
+
+克隆后直接跑，不需要 API Key、不需要第三方包：
+
+```bash
+# 1 · 形态判定
+python scripts/genre_probe.py --file samples/graphic.txt
+
+# 2 · 量化评分
+python scripts/viral_score.py --file samples/video.txt
+
+# 3 · 引擎单测
+python -m unittest discover -s tests -q
+```
+
+三条都过 = 部署可用。
+
+> **终端编码**：两个 CLI 已内置流编码分流——管道 / 重定向统一输出 UTF-8（agent、CI、`tee` 可直接解码），交互终端保留本地编码并把不可编码字符降级为 `?`，不会因 emoji 或 `R²` 崩溃。若仍见乱码，先 `chcp 65001`（Windows）或 `export LANG=en_US.UTF-8` 再重试。
+
+### 给开发者的入口
+
+要改代码、提 PR，先读 [`AGENTS.md`](AGENTS.md)：三条不可协商约束、目录职责表、CHG 改动流程、PR 清单、已知坑清单。
 
 ### 可选：配置 MCP 数据源
 

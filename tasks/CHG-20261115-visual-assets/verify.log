@@ -29,3 +29,54 @@ exit=0
 --- [4] README 零装饰符号 ---
 装饰符号命中: [] 共 0
 exit=0
+
+=== AC-5 本地预验 2026-11-15 19:09:26（不设 PYTHONIOENCODING）===
+genre_probe video exit=0
+genre_probe graphic exit=0
+genre_probe text exit=0
+viral_score  video exit=0
+viral_score  graphic exit=0
+viral_score  text exit=0
+--- unittest ---
+Ran 79 tests in 1.037s
+
+OK
+--- 管道 UTF-8 解码门 ---
+UTF8 OK
+��̬: graphic    ���Ŷ�: ��
+
+=== 全量回归 2026-11-15 19:16:58 ===
+--- unittest（含新增 test_console.py）---
+----------------------------------------------------------------------
+Ran 84 tests in 1.677s
+
+OK
+--- test_console 明细 ---
+  File "F:\software\Miniconda3\Lib\unittest\loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+ModuleNotFoundError: No module named 'tests.test_console'
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (errors=1)
+--- AC-5：6 次 CLI ---
+genre_probe video exit=0
+genre_probe graphic exit=0
+genre_probe text exit=0
+viral_score  video exit=0
+viral_score  graphic exit=0
+viral_score  text exit=0
+--- 管道 UTF-8 门 ---
+UTF8 OK
+--- test_console 定向复核（discover 方式）---
+test_plain_stream_skipped (test_console.TestStreams.test_plain_stream_skipped) ... ok
+test_probe_raises_as_pipe (test_console.TestStreams.test_probe_raises_as_pipe) ... ok
+test_real_streams_safe (test_console.TestStreams.test_real_streams_safe) ... ok
+test_tty_keeps_local (test_console.TestStreams.test_tty_keeps_local) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+OK

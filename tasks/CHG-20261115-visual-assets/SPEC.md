@@ -155,6 +155,7 @@ python -c "import re,sys; s=open('README.md',encoding='utf-8').read(); hit=re.fi
 | `scripts/viralmath/console.py` | 新建 | 流编码规范化（交互终端降级 / 管道统一 UTF-8） |
 | `scripts/genre_probe.py` | 修改 | 仅在 `main()` 首行接入 `setup_streams()`；日志 sink 固定 `encoding="utf-8"` |
 | `scripts/viral_score.py` | 修改 | 同上 |
+| `tests/test_console.py` | 新建 | 锁住流编码分流行为（管道→UTF-8 / 终端→降级不崩） |
 | `README.md` | 修改 | §09 增「一分钟验证」「终端编码」「开发者入口」；结构树加 `AGENTS.md` |
 | `tasks/CHG-20261115-viralmath-engine/TRACEABILITY.md` | 修改 | 增 1 行脚本接管归口 |
 
