@@ -142,7 +142,7 @@ def dim_vectors(texts: list) -> list:
         fs = F.extract(body, "auto")
         prof = G.GENRES[fs.genre]
         dims, _ = dimensions(fs, prof)
-        rows.append({"name": name, "dims": dims, "genre": fs.genre})
+        rows.append({"name": name, "dims": dims, "genre": fs.genre, "n_chars": fs.n_chars})
     return rows
 
 
@@ -160,7 +160,8 @@ def pearson(xs: list, ys: list) -> float:
     return max(-1.0, min(1.0, sxy / math.sqrt(sxx * syy)))
 
 
-def correlation_matrix(rows: list, demean_by_genre: bool = False) -> dict:
+def correlation_matrix(rows: list, demean_by_genre: bool = False,
+                       include_length: bool = False) -> dict:
     """块3：七维相关矩阵。
 
     demean_by_genre=True 时，先减去**每个体裁自己的均值**再算相关。
@@ -170,39 +171,64 @@ def correlation_matrix(rows: list, demean_by_genre: bool = False) -> dict:
         混池后 hook 与 rhythm 会出现很高的表面相关，但它们并不在
         同一个体裁内部冗余——那是题材差异，不是重复计权。
         因此本工具同时给出「混池」与「去体裁均值」两个版本，以去体裁版为准。
+
+    include_length=True 时，把文本长度作为第 k+1 个变量一并放进矩阵，
+    供 
+c 用（块3c：控制长度的偏相关）。
     """
     k = len(G.DIMS)
+    width = k + (1 if include_length else 0)
     groups: dict[str, list] = {}
     for r in rows:
-        groups.setdefault(r["genre"], []).append(r["dims"])
+        vec = list(r["dims"]) + ([float(r["n_chars"])] if include_length else [])
+        groups.setdefault(r["genre"], []).append(vec)
 
-    cols: list[list] = [[] for _ in range(k)]
+    cols: list[list] = [[] for _ in range(width)]
     if demean_by_genre:
         for _, members in groups.items():
             if not members:
                 continue
-            means = [sum(m[j] for m in members) / len(members) for j in range(k)]
+            means = [sum(m[j] for m in members) / len(members) for j in range(width)]
             for m in members:
-                for j in range(k):
+                for j in range(width):
                     cols[j].append(m[j] - means[j])
     else:
-        for r in rows:
-            for j in range(k):
-                cols[j].append(r["dims"][j])
+        for members in groups.values():
+            for m in members:
+                for j in range(width):
+                    cols[j].append(m[j])
 
-    mat = [[1.0] * k for _ in range(k)]
-    for i in range(k):
-        for j in range(i + 1, k):
+    mat = [[1.0] * width for _ in range(width)]
+    for i in range(width):
+        for j in range(i + 1, width):
             r = pearson(cols[i], cols[j])
             mat[i][j] = r
             mat[j][i] = r
     return {
         "matrix": mat,
+        "width": width,
         "n": len(rows),
         "n_groups": len(groups),
         "group_sizes": {g: len(v) for g, v in groups.items()},
         "demeaned": demean_by_genre,
+        "has_length": include_length,
     }
+
+
+def partial_corr(mat: list, i: int, j: int, ctrl: int) -> float:
+    """控制变量 ctrl 后 i 与 j 的偏相关。
+
+    为什么需要它：零阶相关无法区分两件事——
+      (a) 两个维度真的在测同一件事（冗余，要改维度）
+      (b) 两者都被第三个变量推高（混杂，要控那个变量）
+    长文本句长更参差、词表更偏离基线，所以 rhythm 与 distinction
+    可能同时被「文本长度」推高。控住长度再看偏相关，才能判断到底属哪种。
+    """
+    rxy, rxc, ryc = mat[i][j], mat[i][ctrl], mat[j][ctrl]
+    den = math.sqrt(max(1e-12, (1.0 - rxc * rxc) * (1.0 - ryc * ryc)))
+    v = (rxy - rxc * ryc) / den
+    return max(-1.0, min(1.0, v))
+
 
 
 def jacobi_eigenvalues(mat: list, max_iter: int = 100) -> list:
@@ -267,6 +293,16 @@ def main(argv=None) -> int:
     corr = correlation_matrix(rows, demean_by_genre=True)
     eff_pooled = effective_dim(corr_pooled)
     eff = effective_dim(corr)
+    corr_ctrl = correlation_matrix(rows, demean_by_genre=True, include_length=True)
+    ctrl_idx = len(G.DIMS)
+    top_pairs = [
+        (i, j, corr["matrix"][i][j])
+        for i in range(len(G.DIMS)) for j in range(i + 1, len(G.DIMS))
+        if abs(corr["matrix"][i][j]) >= 0.5
+    ]
+    max_partial = 0.0
+    for i, j, _ in top_pairs:
+        max_partial = max(max_partial, abs(partial_corr(corr_ctrl["matrix"], i, j, ctrl_idx)))
 
     probe_fs = F.extract("测试一句话。", "text")
     probe_dims, probe_trace = dimensions(probe_fs, G.GENRES["text"])
@@ -302,6 +338,15 @@ def main(argv=None) -> int:
                 "max_abs_offdiag": round(max_off, 4),
                 "pooled_matrix": [[round(v, 4) for v in row] for row in corr_pooled["matrix"]],
                 "pooled_max_abs_offdiag": round(max_pooled, 4),
+                "partial_given_length": {
+                    "pairs": [
+                        {"pair": [G.DIMS[i], G.DIMS[j]],
+                         "zero_order_r": round(r0, 4),
+                         "partial_r": round(partial_corr(corr_ctrl["matrix"], i, j, ctrl_idx), 4)}
+                        for i, j, r0 in top_pairs
+                    ],
+                    "max_abs_partial": round(max_partial, 4),
+                },
                 "warning": warn,
             },
             "effective_dim": eff,
@@ -357,6 +402,24 @@ def main(argv=None) -> int:
             print(f"| {d} | " + " | ".join(cells) + " |")
         print()
         print(f"最大非对角 |r| = {max_pooled:.3f}（混池值通常偏高，属体裁效应）")
+        print()
+        print("### 3c 控制文本长度后的偏相关（判断残留相关是**混杂**还是**冗余**）")
+        print()
+        if not top_pairs:
+            print("  无 |r| >= 0.5 的维度对，无需控变量。")
+        else:
+            print("| 维度对 | 零阶 r | 控制长度后 r | 判定 |")
+            print("|---|---|---|---|")
+            for i, j, r0 in top_pairs:
+                rp = partial_corr(corr_ctrl["matrix"], i, j, ctrl_idx)
+                if abs(rp) < abs(r0) * 0.6:
+                    verdict = "长度混杂为主"
+                else:
+                    verdict = "疑似真冗余"
+                print(f"| {G.DIMS[i]} ↔ {G.DIMS[j]} | {r0:.2f} | {rp:.2f} | {verdict} |")
+            print()
+            print(f"控制长度后最大偏相关 |r| = {max_partial:.3f}")
+            print("判定口径：偏相关降至零阶的 60% 以下 → 主要为长度混杂；否则疑为真冗余。")
         print()
         print("## 块4 · 有效维度")
         print()
