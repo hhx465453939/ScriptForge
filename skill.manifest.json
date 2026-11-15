@@ -1,9 +1,9 @@
 {
   "schema_version": "2.0",
   "id": "ebuygo-content-ops",
-  "display_name": "Ebuygo 视频文案拆解与仿写引擎",
-  "summary": "接收任意行业的短视频文字脚本，进行五层深度透视拆解（钩子/结构/逻辑/亮点/爆款评估），提炼可复用的脚本模型，输出完形填空模板（运营填空即用）和跨品类仿写脚本",
-  "trigger_summary": "用户提及文案拆解、脚本拆解、仿写、完形填空、爆款拆解、脚本分析、视频文案拆解时触发",
+  "display_name": "Ebuygo 多形态内容拆解与仿写引擎（视频/图文/长文 + 量化评估）",
+  "summary": "接收任意形态内容（视频口播稿/图文笔记/纯文本长文），先自动判定形态，再执行五层深度透视拆解（钩子/结构/逻辑/亮点/爆款评估），提炼可复用模型，输出完形填空模板与跨品类仿写脚本；内置 viralmath 量化评估引擎（信息熵/JS 散度/Zipf/Gini/ACF/OLS/CUSUM/马尔可夫 + AHP/熵权/TOPSIS + Bootstrap BCa），为 7 个维度给出带 95% 置信区间的可复现评分",
+  "trigger_summary": "用户提及文案拆解、脚本拆解、仿写、完形填空、爆款拆解、脚本分析、视频文案、图文拆解、笔记拆解、小红书拆解、长文拆解、公众号拆解、知乎拆解、量化评分、爆款评分、爆款量化时触发",
   "scope": "workspace_custom",
   "entrypoint": {
     "kind": "skill",
@@ -19,7 +19,8 @@
   "state_source": "tasks/<task>/TASK_ORCHESTRATION.md",
   "completion_artifacts": [
     "reports/script_analysis_<model_name>_<timestamp>.md",
-    "assets/fill_blank_template_<model_name>.md"
+    "assets/fill_blank_template_<model_name>.md",
+    "reports/quant_scorecard_<genre>_<timestamp>.md"
   ],
   "information_profile": {
     "enabled": true,
@@ -39,12 +40,13 @@
     "frameworks": ["generic_research", "corporate_advisory"],
     "prefer_local_sources": true,
     "allow_historical_analogues": true,
-    "notes": "6 Phase工作流: 接收感知→深度拆解→模型提炼→完形填空→仿写脚本→知识分享(可选)"
+    "notes": "6 Phase工作流: 形态判定→深度拆解→模型提炼→完形填空→仿写脚本→知识分享(可选); 定量引擎为增量能力，不调 CLI 时原流程照常可用"
   },
   "work_product_profile": {
     "enabled": true,
     "deliverable_kind": "analysis_report",
     "required_sections": [
+      "形态声明",
       "基础判断",
       "钩子拆解",
       "结构解码",
@@ -55,7 +57,18 @@
       "仿写脚本"
     ],
     "optional_sections": [
-      "知识分享文案"
+      "知识分享文案",
+      "标题公式",
+      "首图钩子",
+      "分段节奏",
+      "标签策略",
+      "论点链",
+      "论证结构",
+      "金句密度",
+      "长文钩子",
+      "钩子时间轴",
+      "口播节奏",
+      "量化评分卡"
     ],
     "required_artifacts": [
       "script_analysis_<model>_<timestamp>.md 完整拆解报告",
@@ -65,6 +78,6 @@
       "gate:deep-research-deliver",
       "output:FILEPATH"
     ],
-    "notes": "完形填空模板为核心交付物, 测评类/种草类/清单类文案必须输出"
+    "notes": "形态专属板块按 genre 启用：video→钩子时间轴/口播节奏；graphic→标题公式/首图钩子/分段节奏/标签策略；text→论点链/论证结构/金句密度/长文钩子。完形填空模板为核心交付物。量化评分必须带 95% 置信区间，禁止裸标量"
   }
 }

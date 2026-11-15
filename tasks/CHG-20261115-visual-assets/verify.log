@@ -1,0 +1,31 @@
+=== 验收时间 2026-11-15 17:44:17 ===
+--- [1] XML 合法 ---
+XML OK
+exit=0
+--- [2] 色值白名单 / 零禁用项 ---
+  assets/banner.svg 用色: ['#141414', '#6b6459', '#d8cfbe', '#d93025', '#f0e9dc']
+  assets/mark.svg 用色: ['#141414', '#d93025', '#f0e9dc']
+COLOR/SHAPE OK
+exit=0
+--- [3] README 引用可达 ---
+refs: ['assets/banner.svg']
+missing: []
+exit=0
+--- [4] README 零 emoji ---
+命中: ['→', '★'] 共 39
+exit=1
+
+=== 复验 2026-11-15 17:50:36（修正装饰符号 + 规则区分功能箭头后）===
+--- [1] XML 合法 ---
+XML OK
+exit=0
+--- [2] 色值白名单 / 零禁用项 ---
+COLOR/SHAPE OK
+exit=0
+--- [3] README 引用可达 ---
+refs: ['assets/banner.svg']
+missing: []
+exit=0
+--- [4] README 零装饰符号 ---
+装饰符号命中: [] 共 0
+exit=0

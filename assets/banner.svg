@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 340" width="1280" height="340" role="img" aria-label="ScriptForge — reverse-engineer viral scripts, then forge your own">
+  <title>ScriptForge</title>
+
+  <!-- paper -->
+  <rect width="1280" height="340" fill="#f0e9dc"/>
+
+  <!-- right panel: solid ground so type always sits on one flat colour -->
+  <rect x="980" y="0" width="300" height="340" fill="#d93025"/>
+
+  <!-- constructivist gesture kept at the panel's foot, clear of every glyph -->
+  <polygon points="1040,340 1280,200 1280,340" fill="#141414"/>
+
+  <!-- swiss: top rule, baseline, margin anchor -->
+  <rect x="0" y="0" width="1280" height="6" fill="#141414"/>
+  <rect x="0" y="310" width="980" height="3" fill="#141414"/>
+  <rect x="48" y="46" width="2" height="264" fill="#d8cfbe"/>
+
+  <!-- left block -->
+  <text x="72" y="62" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11"
+        letter-spacing="4.4" fill="#6b6459">AI SKILL / CONTENT OPS</text>
+
+  <text x="70" y="196" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="92"
+        font-weight="900" letter-spacing="-1" fill="#141414">SCRIPT<tspan fill="#d93025">FORGE</tspan></text>
+
+  <rect x="72" y="222" width="600" height="2" fill="#141414"/>
+
+  <text x="72" y="256" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="17"
+        letter-spacing="2.6" fill="#141414">REVERSE-ENGINEER VIRAL SCRIPTS</text>
+  <text x="72" y="282" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="17"
+        letter-spacing="2.6" fill="#6b6459">THEN FORGE YOUR OWN</text>
+
+  <!-- the numeral is the navigation anchor -->
+  <text x="1014" y="152" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="112"
+        font-weight="900" letter-spacing="-4" fill="#f0e9dc">07</text>
+  <text x="1018" y="182" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="10"
+        letter-spacing="5.4" fill="#f0e9dc">DIMENSIONS</text>
+  <text x="1018" y="238" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15"
+        letter-spacing="12" fill="#f0e9dc">S A B C D</text>
+
+  <!-- micro captions under the baseline, like a spec sheet -->
+  <text x="72" y="332" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="10"
+        letter-spacing="3.4" fill="#6b6459">VIDEO / GRAPHIC / TEXT</text>
+  <text x="330" y="332" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="10"
+        letter-spacing="3.4" fill="#6b6459">07 DIMENSIONS / AHP × ENTROPY / TOPSIS / BOOTSTRAP CI</text>
+</svg>

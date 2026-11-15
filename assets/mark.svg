@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>ScriptForge mark v2</title>
+  <!-- 一个形体，两种读法：播放三角 = 钢笔尖 -->
+  <polygon points="9,9 55,32 9,55" fill="#141414"/>
+  <!-- 笔尖的孔 -->
+  <circle cx="30" cy="32" r="4" fill="#d93025"/>
+  <!-- 笔尖的缝（负空间） -->
+  <line x1="37" y1="32" x2="53" y2="32" stroke="#f0e9dc" stroke-width="3"/>
+</svg>

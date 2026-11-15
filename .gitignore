@@ -1,0 +1,23 @@
+# 运行时产物（不入库）
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 抓取与检索缓存
+cache/
+guji-cache/
+
+# 运行日志（脚本侧）
+logs/
+scripts/*.log
+tests/*.log
+
+# 说明：tasks/CHG-*/verify.log 是验收证据，故意不忽略
+
+# 编辑器 / 系统
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
