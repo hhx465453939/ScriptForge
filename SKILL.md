@@ -156,10 +156,15 @@ python scripts/genre_probe.py --file 文案.txt              # 只判形态
 
 模板见 `assets/quant-scorecard-template.md`。
 
-### 7. 运营作战台（campaign loop）
+### 7. 运营作战台（pipeline 模式 · 默认）
 
 > 入口 B：用户给一个**目标**（而不是一段文案）时走这里。
-> 规则唯一承载点：`references/ops-loop.md`（八阶段 + 门控 + 三档模式）；指标层：`references/metrics-taxonomy.md`；物料契约：`assets/campaign-package.md`。
+> **流程唯一承载点：`references/pipeline-loop.md`**（五阶段 + 门控 + 三档模式）。
+> **下游参数唯一承载点：`references/downstream-contracts.md`**（MPT / MatrixMedia 实测字段）。
+> **输出目录契约：`assets/pipeline-package.md`**。
+>
+> ⚠️ 旧 campaign 模式（`ops-loop.md` 八阶段 / `campaign-package.md` 10 文件物料包）**已降级**，
+> 仅团队协作场景使用。个人流水线用它会把注意力从文案稀释到过程文档——这正是 rev2 要修的病。
 
 **一句话**：项目要的不是「做出爆款」，是**搭台子**——让有能力的人坐主驾，新手坐副驾，agent 在自动驾驶档也守规矩。
 
@@ -174,24 +179,22 @@ python scripts/genre_probe.py --file 文案.txt              # 只判形态
 | `product` | sales | 卖货 |
 | `personal` | followers | 个人品牌 |
 
-**八阶段闭环**
+**五阶段流水线（pipeline）**
 
 ```
-S0 定标 → S1 侦察 → S2 定位 → S3 选题 → S4 生产
-      → S5 组装 → S6 排期 → S7 回填 → S8 校准 → 回到 S1
+P0 定标 → P1 侦察+选题 → P2 写稿（主战场）→ P3 出参数 → P4 回读
 ```
 
-| 阶段 | 动作 | 门控 |
-|---|---|---|
-| S0 定标 | 定 obj_type + primary_metric + 产能 | **G0** 无指标 → 阻断 |
-| S1 侦察 | 受众/竞品/热点，数据源 L1→L2→L3 降级 | **G1** 无 `source_level` → 阻断 |
-| S2 定位 | 差异化 + 「不做什么」 | **G2** 无可验证差异点 → 阻断 |
-| S3 选题 | 候选 ≥12 条 × 四维打分 → Top-N | **G3** 无打分排序 → 阻断 |
-| S4 生产 | 多形态文案 + 量化评分卡 + 定点迭代 | **G4** 无评分卡 → 阻断 |
-| S5 组装 | 图/视频/HTML/文案块 + 提示词 + 平台×模型 | **G5** 无 platform/model → 阻断 |
-| S6 排期 | 渠道×时段×变体（单变量） | — |
-| S7 回填 | 真实指标 + 来源层级 + 基线快照 | **G6** 无回填 → 阻断 |
-| S8 校准 | 判定/验假设/重估基线/回流 | — |
+| 阶段 | 动作 | 产出 | 门控 |
+|---|---|---|---|
+| P0 定标 | 定主指标（`primary_metric`）+ 平台 | `README.md` 前 3 行 | **门1** 无指标 → 阻断 |
+| P1 侦察 | 受众/竞品/热点，L1→L2→L3 降级 | 结论内联进 `README.md` | **门2** 无 `source_level` → 阻断 |
+| P2 写稿 | 定形态→选模型→套骨架→**量化评分卡**→定点迭代 | `<平台>/script.md` 或 `note.md` | **门3** 无评分卡 → 阻断 |
+| P3 出参数 | MPT `mpt.json` + MatrixMedia `publish.sh` + 封面提示词 | `<平台>/mpt.json`、`publish.sh` | **门4** 字段不合契约 / 图文给伪命令 → 重写 |
+| P4 回读 | 调 SocialDataX MCP 拉数据，写一页 | `README.md` 回读表 | **门5** 出现人工台账字段 → 退回 |
+
+**与旧 campaign 模式的关键差异**：**不再落任何过程文件**（无 brief / recon / positioning / backlog / schedule / ledger / review）。
+那些文件的原始用途是**协调多人**；个人流水线里协调由工具链本身完成。
 
 **三档模式**
 
@@ -199,26 +202,28 @@ S0 定标 → S1 侦察 → S2 定位 → S3 选题 → S4 生产
 |---|---|---|
 | `copilot` 副驾（默认） | 每阶段审核 | 框架驱动，逐阶段产出 |
 | `navigate` 主驾 | 指定方向与素材 | 只执行与校验 |
-| `autopilot` 自动驾驶 | 只给目标 | 全链自主，仅 3 点确认：目标指标 / 资源边界 / 发布前终审 |
+| `autopilot` 自动驾驶 | 只给目标 | 全链自主，仅 2 点确认：目标指标 / 发布前终审 |
 
 **红线（任何模式都不许破）**：永不代发、永不编造数据、永不跳门控、永不跨形态比绝对分。
 
-**一键起物料包**
+**一键起输出目录**
 
 ```bash
-python scripts/campaign_init.py --slug demo --obj-type repo --metric stars
-python scripts/campaign_init.py --check campaigns/demo_20261115
+python scripts/pipeline_init.py --slug demo --platforms douyin,xiaohongshu,gongzhonghao
+python scripts/pipeline_init.py --check output/demo_20261115
 ```
 
-产出 `campaigns/<slug>_<date>/` 下 10 类文件，缺件可被 `--check` 拦住。
+产出 `output/<slug>_<date>/`，每平台一个目录、3 类文件。
 
-**物料包清单（缺件即不合格）**
+**输出清单（每平台 3 件，缺件即不合格）**
 
-```
-00-brief.md / 01-recon.md / 02-positioning.md / 03-backlog.md
-04-scripts/（≥1 份真实文案）/ 05-assets/image-prompts.md
-05-assets/copy-blocks.md / 06-schedule.md / 07-ledger.md / 08-review.md
-```
+| 平台类型 | 三件 |
+|---|---|
+| 视频（抖音/快手/视频号/B站/头条/百家号） | `script.md`（口播+评分卡）/ `mpt.json`（可直接投喂）/ `publish.sh`（可执行命令） |
+| 小红书（图文） | `note.md` / `cover-prompt.md` / `publish.md`（⚠️ 图文需人工，不可自动分发） |
+| 公众号（长文） | `article.html` / `header-prompt.md` / `publish.md` |
+
+**参数铁律**：`mpt.json` 字段名只能取自 `references/downstream-contracts.md`；不确定写 `UNKNOWN`；`publish.sh` 的 `-f` 未生成视频时用占位符，**不填假路径**。
 
 **侦查降级链（不依赖专业 MCP 也能跑完）**：`L1 专业数据源（有则用） → L2 通用搜索+抓取（必走） → L3 用户/本地语料`。详见 `references/mcp-reference.md`。
 

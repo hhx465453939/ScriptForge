@@ -532,7 +532,12 @@ python -m unittest discover -s tests -q
 
 > 前面的能力回答「这条内容好不好」，这一节回答「**怎么把一个项目真正运营起来**」。
 >
-> 规则唯一承载点：`references/ops-loop.md`；指标层：`references/metrics-taxonomy.md`；物料契约：`assets/campaign-package.md`。
+> **流程唯一承载点：`references/pipeline-loop.md`**（五阶段 + 门控 + 三档模式）。
+> **下游参数唯一承载点：`references/downstream-contracts.md`**（MPT / MatrixMedia 实测字段）。
+> **输出目录契约：`assets/pipeline-package.md`**。
+>
+> ⚠️ 旧 campaign 模式（`ops-loop.md` 八阶段 / `campaign-package.md` 10 文件物料包）已降级，
+> 仅团队协作场景使用。个人流水线用它会把注意力从文案稀释到过程文档。
 
 ### 它要解决什么
 
@@ -555,55 +560,58 @@ python -m unittest discover -s tests -q
 | `product` | `sales` | 卖货 |
 | `personal` | `followers` | 个人品牌 |
 
-### 八阶段闭环
+### 五阶段流水线
 
 ```
-S0 定标 → S1 侦察 → S2 定位 → S3 选题 → S4 生产
-        → S5 组装 → S6 排期 → S7 回填 → S8 校准 → 回到 S1
+P0 定标 → P1 侦察+选题 → P2 写稿（主战场）→ P3 出参数 → P4 回读
 ```
 
-| 阶段 | 动作 | 门控 |
-|---|---|---|
-| S0 定标 | 定 obj_type + primary_metric + 产能 | **G0** 无指标 → 阻断 |
-| S1 侦察 | 受众/竞品/热点，L1→L2→L3 降级 | **G1** 无 `source_level` → 阻断 |
-| S2 定位 | 差异化 + 「不做什么」 | **G2** 无可验证差异点 → 阻断 |
-| S3 选题 | 候选 ≥12 × 四维打分 → Top-N | **G3** 无打分排序 → 阻断 |
-| S4 生产 | 多形态文案 + 量化评分卡 | **G4** 无评分卡 → 阻断 |
-| S5 组装 | 图/视频/HTML/文案块 + 提示词 | **G5** 无 platform/model → 阻断 |
-| S6 排期 | 渠道 × 时段 × 单变量变体 | — |
-| S7 回填 | 真实指标 + 来源层级 + 基线快照 | **G6** 无回填 → 阻断 |
-| S8 校准 | 判定 / 验假设 / 重估基线 / 回流 | — |
+| 阶段 | 动作 | 产出 | 门控 |
+|---|---|---|---|
+| P0 定标 | 定主指标 + 平台 | `README.md` 前 3 行 | **门1** 无指标 → 阻断 |
+| P1 侦察 | 受众/竞品/热点，L1→L2→L3 降级 | 结论内联进 `README.md` | **门2** 无 `source_level` → 阻断 |
+| P2 写稿 | 定形态→选模型→套骨架→**量化评分卡**→定点迭代 | `<平台>/script.md` 或 `note.md` | **门3** 无评分卡 → 阻断 |
+| P3 出参数 | MPT `mpt.json` + MatrixMedia `publish.sh` + 封面提示词 | 每平台 3 类文件 | **门4** 字段不合契约 / 图文给伪命令 → 重写 |
+| P4 回读 | 调 SocialDataX MCP 拉数据，写一页 | `README.md` 回读表 | **门5** 出现人工台账字段 → 退回 |
 
-**S8 必须回流到 S1**。不回流，这就是一个断链，不是闭环。
+**与旧 campaign 模式的关键差异**：不再落任何过程文件（无 brief / recon / positioning / backlog / schedule / ledger / review）。
+那些文件的原始用途是协调多人；个人流水线里，协调由工具链本身完成。
 
-### 一键起物料包
+**P4 必须回流到 P1**。不回流，这就是一个断链，不是闭环。
+
+### 一键起输出目录
 
 ```bash
-# 生成 10 类文件骨架（不写假数据，只留 TBD/UNKNOWN）
-python scripts/campaign_init.py --slug demo --obj-type repo --metric stars
+# 生成骨架（不写假数据，只留 TBD / 待填）
+python scripts/pipeline_init.py --slug demo --platforms douyin,xiaohongshu,gongzhonghao
 
-# 校验已有物料包缺什么
-python scripts/campaign_init.py --check campaigns/demo_20261115
+# 校验已有输出包缺什么
+python scripts/pipeline_init.py --check output/demo_20261115
 ```
 
-物料包清单（缺件即不合格）：
+输出清单（每平台 3 件，缺件即不合格）：
 
 ```
-campaigns/<slug>_<YYYYMMDD>/
-├── 00-brief.md            运营目标书（含 obj_type / primary_metric / 产能）
-├── 01-recon.md            侦察报告（每条数据带 source_level）
-├── 02-positioning.md      定位与差异化（含「不做什么」）
-├── 03-backlog.md          选题池（四维打分排序）
-├── 04-scripts/            各形态文案（每份含量化评分卡）
-├── 05-assets/
-│   ├── image-prompts.md   文生图提示词（13 字段）
-│   ├── video-prompts.md   文生视频提示词（11 字段，按需）
-│   ├── copy-blocks.md     可直接粘贴文案块（按平台分组）
-│   └── html/              HTML 设计文件（按需）
-├── 06-schedule.md         发布排期（变体只改一个变量）
-├── 07-ledger.md           数据回填 + 假设台账
-└── 08-review.md           复盘与校准
+output/<slug>_<YYYYMMDD>/
+├── README.md                战役摘要（≤5 行：目标 / 定位 / 选题理由）
+├── douyin/
+│   ├── script.md            口播全文 + 量化评分卡
+│   ├── mpt.json             MPT VideoParams（18 字段，可直接投喂）
+│   └── publish.sh           MatrixMedia CLI 命令（可执行）
+├── kuaishou/ shipinhao/ bilibili/ toutiao/ baijiahao/   （同上三件）
+├── xiaohongshu/
+│   ├── note.md              图文正文 + 标签
+│   ├── cover-prompt.md      封面提示词（13 字段）
+│   └── publish.md           ⚠️ 图文需人工，不可自动分发
+└── gongzhonghao/
+    ├── article.html         长文 HTML（纯静态）
+    ├── header-prompt.md     头图提示词
+    └── publish.md           人工发布清单
 ```
+
+**为什么要底部下游参数**：目录里每一份要么能被念、要么能被工具直接吃。
+`mpt.json` 交给 MPT 生成视频 → `publish.sh` 交给 MatrixMedia 分发。
+中间不需要排期表、不需要台账。
 
 ### 侦察不依赖专业 MCP
 
@@ -611,7 +619,7 @@ campaigns/<slug>_<YYYYMMDD>/
 L1 专业数据源（有则用） → L2 通用搜索 + 抓取（必走） → L3 用户 / 本地语料
 ```
 
-**L1 是加速器，不是前提。** 没装专业数据 MCP 也必須能跑完 S1 —— 否则这就不是工具，是插件。详见 `references/mcp-reference.md`。
+**L1 是加速器，不是前提。** 没装专业数据 MCP 也必须能跑完 P1 —— 否则这就不是工具，是插件。详见 `references/mcp-reference.md`。
 
 ### 三条红线（任何模式都不许破）
 

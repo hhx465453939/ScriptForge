@@ -21,7 +21,8 @@
     "reports/script_analysis_<model_name>_<timestamp>.md",
     "assets/fill_blank_template_<model_name>.md",
     "reports/quant_scorecard_<genre>_<timestamp>.md",
-    "campaigns/<slug>_<YYYYMMDD>/ 运营物料包（10 类文件）"
+    "output/<slug>_<YYYYMMDD>/<platform>/ 每平台 3 件（文案 + mpt.json + publish.sh）",
+    "（团队协作可选）campaigns/<slug>_<YYYYMMDD>/ 运营物料包"
   ],
   "information_profile": {
     "enabled": true,
@@ -74,8 +75,8 @@
     "required_artifacts": [
       "script_analysis_<model>_<timestamp>.md 完整拆解报告",
       "fill_blank_template_<model>.md 完形填空模板",
-      "campaigns/<slug>_<YYYYMMDD>/00-brief.md 运营目标书（含 obj_type 与 primary_metric）",
-      "campaigns/<slug>_<YYYYMMDD>/07-ledger.md 数据回填与假设台账"
+      "output/<slug>_<YYYYMMDD>/<platform>/mpt.json MPT 参数（字段须符合 downstream-contracts）",
+      "output/<slug>_<YYYYMMDD>/<platform>/publish.sh MatrixMedia 分发命令"
     ],
     "handoff_rules": [
       "gate:deep-research-deliver",
