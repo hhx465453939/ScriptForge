@@ -1,6 +1,6 @@
 # TRACEABILITY：品牌中性化
 
-| 需求 | SPEC 条款 | 产物 | 验收 | 状态 |
+| 需求 | SPEC 条款 | 产物 | 验收 | 立契状态 |
 |---|---|---|---|---|
 | 清除全部品牌残留 | §1 命名映射 | 4 个文件 | `grep -rli "ebuygo\|易购宝"` 返回空 | 待验 |
 | 标识符中性化 | §1 前 2 行 | `SKILL.md` frontmatter | `name: scriptforge` | 待验 |

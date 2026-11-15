@@ -10,9 +10,9 @@ guji-cache/
 
 # 运行日志（脚本侧）
 logs/
-scripts/*.log
-tests/*.log
-
+scripts/**/*.log
+tests/**/*.log
+# 说明：只忽略脚本/测试的运行日志；抓取缓存与 pycache 另有条目
 # 说明：tasks/CHG-*/verify.log 是验收证据，故意不忽略
 
 # 运营物料包（使用者本地产出 / 私域内容，不入库）
