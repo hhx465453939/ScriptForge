@@ -50,114 +50,128 @@ def dimensions(fs: F.FeatureSet, prof: G.GenreProfile) -> tuple[list[float], dic
     caps = G.CAPS
     trace: dict = {}
 
-    # ---------------- D1 钩子力
+    # ---------------- D1 钩子力（位置轴）
+    # rev1.1：移除首句 surprisal（与 D2 的词汇熵同源，同一 token 分布）；
+    # 换入「前3句字数占比」——衡量开头是否把力气放在前 3 秒，属位置轴。
     qe_first3 = sum(s.count("？") + s.count("?") + s.count("！") + s.count("!")
                     for s in fs.sentences[:3])
+    first3_ratio = (fs.first3_chars / fs.n_chars) if fs.n_chars > 0 else 0.0
     s_hook_hits = _sat(fs.hook_weight_sum, caps["hook_weight_sum"])
-    s_surprisal = _sat(fs.first_sent_surprisal, caps["surprisal"])
     s_qe = _sat(qe_first3, caps["qe_first3"])
+    s_first3 = _sat(first3_ratio, caps["first3_ratio"])
     w = G.SUB_WEIGHTS["hook"]
-    hook = w[0] * s_hook_hits + w[1] * s_surprisal + w[2] * s_qe
+    hook = w[0] * s_hook_hits + w[1] * s_qe + w[2] * s_first3
     trace["hook"] = {
         "hook_weight_sum": round(fs.hook_weight_sum, 4),
         "hook_hits_first3": fs.hook_hits,
-        "first_sent_surprisal": round(fs.first_sent_surprisal, 4),
         "qe_first3": qe_first3,
-        "sub": [round(x, 4) for x in (s_hook_hits, s_surprisal, s_qe)],
+        "first3_chars": fs.first3_chars,
+        "first3_ratio": round(first3_ratio, 4),
+        "first_sent_surprisal_diag": round(fs.first_sent_surprisal, 4),  # 仅诊断，不计分
+        "sub": [round(x, 4) for x in (s_hook_hits, s_qe, s_first3)],
         "weights": w,
+        "aspects": ["钩子词(分类)", "标点强度(位置)", "开头占比(位置)"],
     }
 
-    # ---------------- D2 信息密度
-    info_units = fs.number_hits + fs.trust_hits + sum(fs.hook_hits_all.values())
+    # ---------------- D2 信息密度（词汇轴）
+    # rev1.1：移除 Zipf α（与归一化熵为镜像，强负相关）；
+    # rev1.2：移除 hook_hits_all（跳维重复计权：钩子已由 D1 加权计入）；
+    # rev1.3：再移除 trust_hits（与 D5 重叠，实测 density↔persuasion r=0.79）。
+    #          语义重新分配：「数字/度量」→ 信息密度；「信任锚/CTA」→ 说服转化。
+    info_units = fs.number_hits
     s_info = _sat(_per100(info_units, fs.n_chars), caps["info_units"])
     s_vocab = _sat(info.normalize_entropy(fs.token_counts), caps["vocab_entropy"])
     zf = info.zipf_fit(fs.token_counts)
-    zipf_trusted = zf["r2"] >= 0.70
-    s_zipf = _sat(zf["alpha"], caps["zipf_alpha"]) if zipf_trusted else None
     w = G.SUB_WEIGHTS["density"]
-    if s_zipf is None:
-        # Zipf 拟合不可信 → 把它的权重按比例分给前两项（不虚构拟合质量）
-        tot = w[0] + w[1]
-        density = (w[0] / tot) * s_info + (w[1] / tot) * s_vocab
-    else:
-        density = w[0] * s_info + w[1] * s_vocab + w[2] * s_zipf
+    density = w[0] * s_info + w[1] * s_vocab
     trace["density"] = {
         "info_units": info_units,
+        "info_units_note": "仅数字/度量（不含钩子词与信任锚，避免与 D1/D5 重复计权）",
         "info_units_per100": round(_per100(info_units, fs.n_chars), 4),
         "vocab_entropy_norm": round(info.normalize_entropy(fs.token_counts), 4),
-        "zipf": {k: round(v, 4) if isinstance(v, float) else v for k, v in zf.items()},
-        "zipf_trusted": zipf_trusted,
-        "sub": [round(x, 4) for x in (s_info, s_vocab, s_zipf if s_zipf is not None else -1.0)],
+        "zipf_diag": {k: round(v, 4) if isinstance(v, float) else v for k, v in zf.items()},
+        "sub": [round(x, 4) for x in (s_info, s_vocab)],
+        "weights": w,
+        "aspects": ["具体数字密度(计数)", "词汇离散度(分布)"],
     }
 
-    # ---------------- D3 节奏冲击
+    # ---------------- D3 节奏冲击（长度动态轴：分布 / 时序 / 周期）
+    # rev1.1：移除 CV（与 Gini 同为离散度）→ 换入句长交替率（时序模式），降为诊断。
     g = rhythm.gini(fs.sent_lengths)
+    alt = rhythm.alternation_rate(fs.sent_lengths)
     cvr = rhythm.cv_robust(fs.sent_lengths)
     per = rhythm.dominant_period(fs.sent_lengths)
     s_gini = _sat(g, caps["gini"])
-    s_cv = _sat(cvr["cv"], caps["cv"])
-    s_per = _sat(per["power_ratio"], caps["period"]) if per["reliable"] else 0.5  # 不可信时取中性
+    s_alt = _sat(alt["rate"], caps["alternation"]) if alt["reliable"] else 0.5
+    s_per = _sat(per["power_ratio"], caps["period"]) if per["reliable"] else 0.5
     w = G.SUB_WEIGHTS["rhythm"]
-    r_dim = w[0] * s_gini + w[1] * s_cv + w[2] * s_per
+    r_dim = w[0] * s_gini + w[1] * s_alt + w[2] * s_per
     trace["rhythm"] = {
         "gini": round(g, 4),
-        "cv": round(cvr["cv"], 4),
-        "cv_robust": round(cvr["cv_robust"], 4),
+        "alternation": alt,
+        "cv_diag": round(cvr["cv"], 4),
         "mad": round(cvr["mad"], 4),
-        "acf_lag1": (round(rhythm.acf(fs.sent_lengths, 1)[0], 4)
-                     if len(fs.sent_lengths) > 2 else None),
         "period": {k: (round(v, 4) if isinstance(v, float) else v) for k, v in per.items()},
-        "sub": [round(x, 4) for x in (s_gini, s_cv, s_per)],
+        "sub": [round(x, 4) for x in (s_gini, s_alt, s_per)],
         "weights": w,
+        "aspects": ["离散度(分布)", "交替率(时序)", "周期性(周期)"],
     }
 
-    # ---------------- D4 情绪驱动
+    # ---------------- D4 情绪驱动（情绪动态轴：振幅 / 方向 / 位置 / 词汇）
+    # rev1.1：移除 CUSUM（与波动率同为振幅读数）→ 换入情绪峰值位置（位置）。
+    # rev1.2：再移除 emo_density——波动率本身就由同一情绪词典逐句计算得出，
+    #          再计入词频密度属**同词典重复计权**（实测 density↔emotion r=0.87）。
     emo = affect.emotion_series(fs.emotion_valence)
     sl = affect.ols_slope(fs.emotion_valence)
+    pk = affect.peak_position(fs.emotion_arousal)
     cp = affect.cusum_changepoints(fs.emotion_valence, h=4.0, drift=0.5)
     s_vol = _sat(emo["volatility"], caps["volatility"])
     s_slope = _sat(abs(sl["slope"]), caps["slope"])
-    s_cusum = _sat(cp["max_stat"], caps["cusum"])
-    s_emo = _sat(_per100(fs.emotion_hits, fs.n_chars), caps["emo_density"])
+    s_peak = _sat(pk["pos"], caps["peak_pos"]) if pk["reliable"] else 0.5
     w = G.SUB_WEIGHTS["emotion"]
-    emo_dim = w[0] * s_vol + w[1] * s_slope + w[2] * s_cusum + w[3] * s_emo
+    emo_dim = w[0] * s_vol + w[1] * s_slope + w[2] * s_peak
     trace["emotion"] = {
         "arc_type": emo["arc_type"],
         "volatility": round(emo["volatility"], 4),
         "slope": round(sl["slope"], 5),
         "slope_t": round(sl["t"], 4),
         "slope_r2": round(sl["r2"], 4),
-        "cusum_max_stat": round(cp["max_stat"], 4),
-        "cusum_points": cp["points"],
-        "emotion_hits": fs.emotion_hits,
-        "sub": [round(x, 4) for x in (s_vol, s_slope, s_cusum, s_emo)],
+        "peak_position": pk,
+        "cusum_diag": {"max_stat": round(cp["max_stat"], 4), "points": cp["points"]},
+        "emotion_hits_diag": fs.emotion_hits,
+        "sub": [round(x, 4) for x in (s_vol, s_slope, s_peak)],
         "weights": w,
+        "aspects": ["振幅(标准差)", "方向(斜率)", "位置(峰值)"],
     }
 
     # ---------------- D5 说服转化
+    # rev1.3：移除「数字」子指标（已归 D2，避免与信息密度重叠）；
+    #          本维只管「信任背书」与「行动指令」两个不同方面 + 合规扣分。
     s_trust = _sat(_per100(fs.trust_hits, fs.n_chars), caps["trust_density"])
-    s_num = _sat(_per100(fs.number_hits, fs.n_chars), caps["number_density"])
+    s_num_diag = _sat(_per100(fs.number_hits, fs.n_chars), caps["number_density"])
     if fs.cta_hits > 0:
         pos = max(0.0, fs.cta_position_ratio)
         s_cta = _sat(fs.cta_hits, caps["cta_count"]) * (0.85 + 0.15 * pos)
     else:
         s_cta = 0.0
     w = G.SUB_WEIGHTS["persuasion"]
-    pers = w[0] * s_trust + w[1] * s_num + w[2] * s_cta
+    pers = w[0] * s_trust + w[1] * s_cta
     # 合规扣分：绝对化用语（广告法风险）拉低说服力——违规文案转化再好也不可持续
     compliance_penalty = min(0.30, fs.absolute_hits * 0.05)
     pers = max(0.0, pers - compliance_penalty)
     trace["persuasion"] = {
         "trust_hits": fs.trust_hits,
         "trust_per100": round(_per100(fs.trust_hits, fs.n_chars), 4),
-        "number_hits": fs.number_hits,
+        "number_hits_diag": fs.number_hits,
         "cta_hits": fs.cta_hits,
         "cta_position_ratio": round(fs.cta_position_ratio, 4),
         "hedge_hits": fs.hedge_hits,
         "absolute_hits": fs.absolute_hits,
         "compliance_penalty": round(compliance_penalty, 4),
-        "sub": [round(x, 4) for x in (s_trust, s_num, s_cta)],
+        "sub": [round(x, 4) for x in (s_trust, s_cta)],
         "weights": w,
+        "aspects": ["信任锚(背书)", "CTA(行动指令)"],
+        "number_score_diag": round(s_num_diag, 4),
     }
 
     # ---------------- D6 差异化（JS vs 形态基线，扣除词表规模噪声地板）
@@ -340,11 +354,16 @@ def score(text: str, genre: str = "auto", seed: int = 20260101,
     reliability = []
     if not trace["replicability"]["reliable"]:
         reliability.append("可复制性：结构转移样本不足，已折减并标注低置信")
-    if not trace["density"]["zipf_trusted"]:
+    zf_r2 = trace["density"]["zipf_diag"]["r2"]
+    if zf_r2 < 0.70:
         reliability.append(
-            f"信息密度：Zipf 拟合 R²={trace['density']['zipf']['r2']} < 0.70，已剔除该项权重")
+            f"信息密度：Zipf 拟合 R²={zf_r2} < 0.70（该项已降为诊断输出，不计分）")
     if not trace["rhythm"]["period"]["reliable"]:
         reliability.append("节奏：句数 < 20，主周期检测不可信，已取中性值 0.5")
+    if not trace["rhythm"]["alternation"]["reliable"]:
+        reliability.append("节奏：句长差样本不足，交替率不可信，已取中性值 0.5")
+    if not trace["emotion"]["peak_position"]["reliable"]:
+        reliability.append("情绪：句数 < 5，峰值位置不可信，已取中性值 0.5")
     if fs.genre_confidence == "低":
         reliability.append("形态判定为低置信（兜底规则命中），建议用户显式指定形态后重算")
 

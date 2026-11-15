@@ -198,6 +198,45 @@ def dominant_period(xs: list[float]) -> dict:
     }
 
 
+def alternation_rate(xs: list[float]) -> dict:
+    """句长交替率：相邻差值的**符号变化**比例，∈[0,1]。
+
+    **为什么需要它**（本维度去重的关键）：
+        Gini 与 CV 都是「离散度」的两个标度，同时参与 D3 = 同一方面投两票。
+        而「离散度大」不等于「长短交替」——一串单调递增的句长离散度很高，
+        但读起来毫无节拍。交替率测的是**时序模式**，与离散度是不同的统计方面。
+
+    定义：sign(x[i+1]-x[i]) 发生变化的次数 / (n-1)；差值为 0 不计变化。
+    陷阱：n<5 时最多只有 4 个差值，交替率极不稳定 → reliable=False，调用方应取中性值。
+
+    返回 {rate, changes, n_pairs, reliable}。
+    """
+    vals = [float(x) for x in xs]
+    n = len(vals)
+    pairs = max(0, n - 1)
+    if pairs < 1:
+        return {"rate": 0.0, "changes": 0, "n_pairs": 0, "reliable": False}
+
+    signs: list[int] = []
+    for a, b in zip(vals, vals[1:]):
+        d = b - a
+        if d > 1e-12:
+            signs.append(1)
+        elif d < -1e-12:
+            signs.append(-1)
+        # d ≈ 0 → 既不升也不降，不计符号（避免把「平」当成变化）
+
+    changes = sum(1 for s1, s2 in zip(signs, signs[1:]) if s1 != s2)
+    denom = max(1, len(signs) - 1)
+    rate = min(1.0, changes / denom)
+    return {
+        "rate": rate,
+        "changes": changes,
+        "n_pairs": len(signs),
+        "reliable": len(signs) >= 4,
+    }
+
+
 # ------------------------------------------------------------------ 马尔可夫
 def markov_entropy_rate(states: list[str]) -> dict:
     """一阶马尔可夫链熵率 H_rate = Σ_i π_i · H(P_i·)。

@@ -114,3 +114,37 @@ def emotion_series(per_sentence_scores: list[float]) -> dict:
         arc = "平"
     return {"mean": mean, "volatility": vol, "slope": ols["slope"],
             "up_ratio": up_ratio, "arc_type": arc}
+
+
+def peak_position(arousal: list[float]) -> dict:
+    """情绪峰值位置：唤醒度最大的那句在全文的相对位置，∈[0,1]。
+
+    **为什么需要它**（D4 去重的关键）：
+        波动率（振幅）、斜率（方向）、CUSUM（变点强度）三者本质都在描述
+        「这条情绪序列有多剧烈」，属同一方面的不同读数 → 三重计权。
+        而「激烈程度」与「峰值放在哪里」是两个统计上无关的方面：
+        一条振幅很大的序列，峰值可能在第 2 句（前强后弱）也可能在末尾（逐步推高）。
+
+    实现要点：用 **arousal**（唤醒度）而非 valence，避免与振幅/方向同一序列；
+    位置取 argmax / (n-1)，使首句=0、末句=1。
+
+    陷阱：n<5 时 argmax 受噪声主导 → reliable=False，调用方应取中性值。
+    已知局限：本项用**单调饱和**归一，隐含「峰值越靠后越好」的假设；
+    真实最优可能非单调（过早无回味，过晚无铺垫），但无校准数据前不凭空构造曲率。
+
+    返回 {pos, peak_index, n, reliable}。
+    """
+    vals = [float(x) for x in arousal]
+    n = len(vals)
+    if n == 0:
+        return {"pos": 0.0, "peak_index": 0, "n": 0, "reliable": False}
+    if n == 1:
+        return {"pos": 0.5, "peak_index": 0, "n": 1, "reliable": False}
+    idx = max(range(n), key=lambda i: vals[i])
+    pos = idx / (n - 1)
+    return {
+        "pos": max(0.0, min(1.0, pos)),
+        "peak_index": idx,
+        "n": n,
+        "reliable": n >= 5,
+    }
