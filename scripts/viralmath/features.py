@@ -116,6 +116,31 @@ def _count_hits(text: str, lexicon) -> int:
     return n
 
 
+# 序数后缀：若「第一」后跟这些字，它是一个序数词，不是最高级用语
+_ORDINAL_TAIL = "天件步次轮个期年月日批层条位季节课章页名句段落周遍部"
+
+
+def _count_absolute(text: str) -> int:
+    """统计绝对化用语，但**排除序数词「第一」**（第一天 / 第一步 / 第一次…）。
+
+    陷阱（本项目实测踩到的）：朴素子串匹配会把「第一天 / 第一件事 / 第一步」当成
+    最高级用语，于是任何写序数的内容都被误扣合规分（每处 0.05，上限 0.30）。
+    实测后果：一篇正常长文 absolute_hits=5（全是「第一天/第一件」），
+    penalty=0.25 直接吞掉说服转化得分，使其恒为 0.0000——是假阳性，不是内容差。
+
+    做法：对「第一」加后视排除；其余绝对化词仍照常统计（如「唯一」「全网最低」必须罚）。
+    """
+    if not text:
+        return 0
+    n = 0
+    for w in C.ABSOLUTE_WORDS:
+        if w == "第一":
+            continue
+        n += text.count(w)
+    n += len(re.findall(r"第一(?![%s])" % _ORDINAL_TAIL, text))
+    return n
+
+
 def _hook_hits(sentences: list[str], limit: int = 3) -> tuple[dict[str, int], float]:
     """前 limit 句内的钩子命中数 + 加权强度。"""
     seg = "".join(sentences[:limit])
@@ -338,7 +363,7 @@ def extract(text: str, genre: str = "auto") -> FeatureSet:
     fs.number_hits = len(_NUMBER_RE.findall(t))
     fs.cta_hits = _count_hits(t, C.CTA_WORDS)
     fs.hedge_hits = _count_hits(t, C.HEDGE_WORDS)
-    fs.absolute_hits = _count_hits(t, C.ABSOLUTE_WORDS)
+    fs.absolute_hits = _count_absolute(t)
 
     # CTA 相对位置（越靠后 = 越接近 1；无 CTA = -1）
     if fs.sentences and fs.cta_hits:

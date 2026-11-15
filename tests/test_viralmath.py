@@ -357,6 +357,39 @@ class TestFeatures(unittest.TestCase):
         self.assertEqual(fs.n_chars, 0)
         self.assertEqual(fs.sentences, [])
 
+    def test_ordinal_not_absolute(self):
+        # 回归保护：修复前「第一天 / 第一件事 / 第一步」被当成最高级用语，
+        # 导致 absolute_hits 虚高 → 合规扣分上限 0.30 → 说服转化恒为 0。
+        txt = "第一天我先定指标。第一件事是拒绝开工。第一步先组基线。"
+        fs = F.extract(txt, genre="text")
+        self.assertEqual(fs.absolute_hits, 0, f"序数词被误判为绝对化：{fs.absolute_hits}")
+
+    def test_superlative_still_counted(self):
+        # 真违规必须照罚，不能因为修序数词而放过绝对化用语
+        txt = "全网最低价，唯一选择，永久有效。"
+        fs = F.extract(txt, genre="text")
+        self.assertGreaterEqual(fs.absolute_hits, 2)
+
+    def test_dev_cta_detected(self):
+        # 回归保护：修复前 CTA 词表只有电商话术，开发者类 CTA 全盲
+        txt = "仓库装好后跑一遍命令，跑完把结果发我。"
+        fs = F.extract(txt, genre="text")
+        self.assertGreater(fs.cta_hits, 0, "开发者类 CTA 未被识别")
+
+    def test_ecommerce_cta_still_detected(self):
+        # 补词表不能把原电商 CTA 弄丢
+        fs = F.extract("点进链接，加入购物车，下单吧。", genre="video")
+        self.assertGreater(fs.cta_hits, 0)
+
+    def test_ordinal_text_still_scores_persuasion(self):
+        # 端到端回归：带序数词 + 有 CTA 的稿子，说服转化不应被扣成 0
+        txt = ("第一步先定指标。第一天我搜了一圈。第二天开始写稿，数据对比了三组。"
+               "仓库装好后跑一遍，跑完把结果发我，评论区也可以留言。")
+        r = score(txt, genre="text", n_boot=0)
+        self.assertGreater(r["dimensions"]["persuasion"], 0.0,
+                           "序数词假阳性仍在吞掉说服转化得分")
+        self.assertEqual(r["feature_trace"]["persuasion"]["absolute_hits"], 0)
+
 
 # --- 端到端 ---
 class TestEngine(unittest.TestCase):

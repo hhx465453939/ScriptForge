@@ -167,6 +167,7 @@ campaigns/<slug>_<YYYYMMDD>/
 | `skill.manifest.json` | 修改 | trigger / summary / required_artifacts / completion_artifacts |
 | `references/mcp-reference.md` | 修改 | 升级为**侦察协议**（降级链 + 来源分级强制 + 热点分析方法） |
 | `README.md` | 修改 | 新增「运营作战台」一节（不改既有章节） |
+| `campaigns/<slug>_<YYYYMMDD>/**` | 运行产物（**不入库**） | 由 `campaign_init.py` 在**使用者本地**生成、由使用者自行填充；已加入 `.gitignore`。属**用户私域运营内容**，不属项目源码——项目只提供台子（`references/` + `assets/` + `scripts/`） |
 
 ## 7. 验收命令
 
