@@ -139,5 +139,49 @@ python -c "import re,sys; s=open('README.md',encoding='utf-8').read(); hit=re.fi
 ## 6. 回归保护
 
 - `README.md` 的事实性内容（能力表 / 模型表 / 输出结构 / 命令行示例）**沿用前两个 CHG 已冻结的契约**，本 CHG 不得改动其语义，只改呈现。
-- 不触碰 `scripts/**`、`tests/**`、`references/**`、`samples/**`。
+- 不触碰 `tests/**`、`references/**`、`samples/**`。
+- **`scripts/**` 原本不属本 CHG，rev1.1 起接管「部署链健壮性」最小改动集**（仅 `console.py` 新增 + 两个 CLI 接入 + 日志编码），不动任何算法与评分逻辑。
 - 旧 `assets/banner.png` 不删、不改名。
+
+---
+
+## 7. rev1.1：开发者注入与部署链健壮性（Owner 授权）
+
+### 7.1 新增交付项（追加到 §4 清单）
+
+| 路径 | 类型 | 说明 |
+|---|---|---|
+| `AGENTS.md` | 新建 | 开发型 agent 的最小必要上下文 + PR 指导（≤160 行） |
+| `scripts/viralmath/console.py` | 新建 | 流编码规范化（交互终端降级 / 管道统一 UTF-8） |
+| `scripts/genre_probe.py` | 修改 | 仅在 `main()` 首行接入 `setup_streams()`；日志 sink 固定 `encoding="utf-8"` |
+| `scripts/viral_score.py` | 修改 | 同上 |
+| `README.md` | 修改 | §09 增「一分钟验证」「终端编码」「开发者入口」；结构树加 `AGENTS.md` |
+| `tasks/CHG-20261115-viralmath-engine/TRACEABILITY.md` | 修改 | 增 1 行脚本接管归口 |
+
+### 7.2 契约：编码分派规则（冻结）
+
+| 读者 | 判据 | 行为 |
+|---|---|---|
+| 人（交互终端） | `isatty()` 为真 | 保留终端自身编码，`errors="replace"`（不可编码字符降为 `?`，中文正常） |
+| agent / CI / `tee` | `isatty()` 为假 | `encoding="utf-8"`, `errors="replace"` |
+| 日志文件 | 写盘 | 固定 `encoding="utf-8"`，不随控制台编码漂移 |
+
+**红线**：不改任何维度算法、权重、分区阈值、输出字段名；`feature_trace` 与 JSON 结构一字不动。
+
+### 7.3 AC-5：全新克隆部署链（新增验收）
+
+在**全新 clone 的目录**内执行，且**不设** `PYTHONIOENCODING`：
+
+```bash
+for f in video graphic text; do
+  python scripts/genre_probe.py --file samples/$f.txt >/dev/null; echo "genre_probe $f exit=$?"
+done
+for f in video graphic text; do
+  python scripts/viral_score.py --file samples/$f.txt >/dev/null; echo "viral_score $f exit=$?"
+done
+python -m unittest discover -s tests -q
+# 管道消费方可按 UTF-8 解码（乱码回归门）
+python scripts/genre_probe.py --file samples/graphic.txt | python -c "import sys; sys.stdin.buffer.read().decode('utf-8'); print('UTF8 OK')"
+```
+
+**通过条件**：6 次 CLI 全 `exit=0`、unittest 全绿、最后一行打印 `UTF8 OK`。

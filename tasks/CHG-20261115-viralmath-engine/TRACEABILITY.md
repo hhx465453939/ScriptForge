@@ -38,6 +38,7 @@ AHP、熵权法、TOPSIS、DTW、Gini、MAD-z。
 - [x] `skill.manifest.json` — 本 CHG 只改：summary/trigger/required_sections
 - [x] `README.md` — 本 CHG 只改：能力表 + 结构树
 - [x] `assets/*.svg`、`.gitignore` — **不属本 CHG**，归 `CHG-20261115-visual-assets`
+- [x] `scripts/genre_probe.py`、`scripts/viral_score.py` 的**流编码修正** — 本 CHG 创建文件，rev1.1 的部署链修复由 `CHG-20261115-visual-assets` 接管（仅 `setup_streams()` 接入 + 日志 `encoding`），算法与评分逻辑不变
 
 ## 字段名对齐（与 CHG-A 接口）
 

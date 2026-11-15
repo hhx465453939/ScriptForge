@@ -18,6 +18,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from viralmath.console import setup_streams  # noqa: E402
 from viralmath.features import extract, detect_genre  # noqa: E402
 
 
@@ -28,12 +29,14 @@ def _setup_log() -> str:
     log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "genre_probe.log")
     logging.basicConfig(
         filename=log_path, level=logging.INFO, filemode="a", force=True,
+        encoding="utf-8",
         format="%(asctime)s %(levelname)s %(message)s",
     )
     return log_path
 
 
 def main(argv: list[str] | None = None) -> int:
+    setup_streams()
     p = argparse.ArgumentParser(description="内容形态判定（video / graphic / text）")
     src = p.add_mutually_exclusive_group(required=True)
     src.add_argument("--file", help="内容文件路径（UTF-8）")

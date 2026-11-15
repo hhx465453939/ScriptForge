@@ -31,3 +31,16 @@
 - [ ] README 首图引用可达、正文零 emoji、导航锚点全命中
 - [ ] 两份旧 CHG 的独占清单含资产归口行
 - [ ] `git status` 不再出现运行时产物
+
+## rev1.1 追加执行项
+
+| # | 动作 | 产物 | 依赖 |
+|---|---|---|---|
+| 11 | 流编码规范化工具 | `scripts/viralmath/console.py` | 无 |
+| 12 | 两个 CLI 接入 + 日志编码固定 | `genre_probe.py` / `viral_score.py` | 11 |
+| 13 | 开发者注入文档 | `AGENTS.md` | 全部（需反映真实现状） |
+| 14 | 部署章节重写（一分钟验证 / 终端编码） | `README.md` §09 | 12 |
+| 15 | AC-5 全新克隆验收 | `verify.log` | 11–14 |
+| 16 | 推送后再克隆一次复验 | 验收记录 | 15 + push |
+
+**rev1.1 约束**：`console.py` 只做流编码，不碰算法；两个 CLI 的改动面限于「import + main 首行调用 + 日志 encoding」三处。

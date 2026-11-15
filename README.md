@@ -24,7 +24,8 @@
   <a href="#05-模板与仿写">模板仿写</a> ·
   <a href="#08-项目结构">项目结构</a> ·
   <a href="#10-faq">FAQ</a> ·
-  <a href="#11-边界">边界</a>
+  <a href="#11-运营作战台">运营作战台</a> ·
+  <a href="#12-边界">边界</a>
 </p>
 
 ---
@@ -498,7 +499,106 @@ gemini --list-skills | grep scriptforge
 
 ---
 
-## 11 边界
+## 11 运营作战台
+
+> 前面的能力回答「这条内容好不好」，这一节回答「**怎么把一个项目真正运营起来**」。
+>
+> 规则唯一承载点：`references/ops-loop.md`；指标层：`references/metrics-taxonomy.md`；物料契约：`assets/campaign-package.md`。
+
+### 它要解决什么
+
+把项目从「文案工具」变成「能开战的台子」：
+
+- 有能力的人 → 坐主驾（`navigate`）
+- 新手 → 坐副驾（`copilot`，框架替你开）
+- 只给一句话目标 → 自动驾驶（`autopilot`，框架守着三条红线）
+
+### 爆的唯一定义
+
+> `爆 := primary_metric ≥ 同条件历史 P80`，且必须带样本量与置信区间。
+
+**没有指标不许开工。** 四种目标对象对应四种主指标：
+
+| obj_type | primary_metric | 典型场景 |
+|---|---|---|
+| `repo` | `stars` | 把开源项目运营火 |
+| `content` | `views` | 做账号、涨流量 |
+| `product` | `sales` | 卖货 |
+| `personal` | `followers` | 个人品牌 |
+
+### 八阶段闭环
+
+```
+S0 定标 → S1 侦察 → S2 定位 → S3 选题 → S4 生产
+        → S5 组装 → S6 排期 → S7 回填 → S8 校准 → 回到 S1
+```
+
+| 阶段 | 动作 | 门控 |
+|---|---|---|
+| S0 定标 | 定 obj_type + primary_metric + 产能 | **G0** 无指标 → 阻断 |
+| S1 侦察 | 受众/竞品/热点，L1→L2→L3 降级 | **G1** 无 `source_level` → 阻断 |
+| S2 定位 | 差异化 + 「不做什么」 | **G2** 无可验证差异点 → 阻断 |
+| S3 选题 | 候选 ≥12 × 四维打分 → Top-N | **G3** 无打分排序 → 阻断 |
+| S4 生产 | 多形态文案 + 量化评分卡 | **G4** 无评分卡 → 阻断 |
+| S5 组装 | 图/视频/HTML/文案块 + 提示词 | **G5** 无 platform/model → 阻断 |
+| S6 排期 | 渠道 × 时段 × 单变量变体 | — |
+| S7 回填 | 真实指标 + 来源层级 + 基线快照 | **G6** 无回填 → 阻断 |
+| S8 校准 | 判定 / 验假设 / 重估基线 / 回流 | — |
+
+**S8 必须回流到 S1**。不回流，这就是一个断链，不是闭环。
+
+### 一键起物料包
+
+```bash
+# 生成 10 类文件骨架（不写假数据，只留 TBD/UNKNOWN）
+python scripts/campaign_init.py --slug demo --obj-type repo --metric stars
+
+# 校验已有物料包缺什么
+python scripts/campaign_init.py --check campaigns/demo_20261115
+```
+
+物料包清单（缺件即不合格）：
+
+```
+campaigns/<slug>_<YYYYMMDD>/
+├── 00-brief.md            运营目标书（含 obj_type / primary_metric / 产能）
+├── 01-recon.md            侦察报告（每条数据带 source_level）
+├── 02-positioning.md      定位与差异化（含「不做什么」）
+├── 03-backlog.md          选题池（四维打分排序）
+├── 04-scripts/            各形态文案（每份含量化评分卡）
+├── 05-assets/
+│   ├── image-prompts.md   文生图提示词（13 字段）
+│   ├── video-prompts.md   文生视频提示词（11 字段，按需）
+│   ├── copy-blocks.md     可直接粘贴文案块（按平台分组）
+│   └── html/              HTML 设计文件（按需）
+├── 06-schedule.md         发布排期（变体只改一个变量）
+├── 07-ledger.md           数据回填 + 假设台账
+└── 08-review.md           复盘与校准
+```
+
+### 侦察不依赖专业 MCP
+
+```
+L1 专业数据源（有则用） → L2 通用搜索 + 抓取（必走） → L3 用户 / 本地语料
+```
+
+**L1 是加速器，不是前提。** 没装专业数据 MCP 也必須能跑完 S1 —— 否则这就不是工具，是插件。详见 `references/mcp-reference.md`。
+
+### 三条红线（任何模式都不许破）
+
+| 红线 | 原因 |
+|---|---|
+| **永不代发** | 越权且不可回滚；发布动作由人执行 |
+| **永不编造数据** | 缺失写 `UNKNOWN`；编造比缺失严重 |
+| **永不跳门控** | 跳过 = 闭环退化成链，S8 无法归因 |
+
+### 第一次跑没有基线怎么办
+
+写 `baseline: BASELINE_MISSING`，本次定位为**基线采集战役**：目标是产出 `n≥10` 有效样本，而不是「爆」。下一轮才具备判定能力。这一步不能跳。
+
+---
+
+## 12 边界
 
 诚实清单。这些是已知盲区，不是待办：
 
